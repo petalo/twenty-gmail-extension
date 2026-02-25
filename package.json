@@ -1,0 +1,50 @@
+{
+  "name": "twenty-extension",
+  "version": "1.0.0",
+  "description": "Gmail add-on for Twenty CRM",
+  "scripts": {
+    "gas:login": "cd src/apps_script && clasp login",
+    "gas:logout": "cd src/apps_script && clasp logout",
+    "gas:create": "cd src/apps_script && clasp create --type standalone --title \"Twenty for Gmail\"",
+    "gas:clone": "cd src/apps_script && clasp clone",
+    "gas:push": "cd src/apps_script && clasp push",
+    "gas:pull": "cd src/apps_script && clasp pull",
+    "gas:open": "cd src/apps_script && clasp open",
+    "gas:deploy": "cd src/apps_script && clasp deploy",
+    "gas:version": "cd src/apps_script && clasp version \"E2E build\"",
+    "gas:logs": "cd src/apps_script && clasp logs --watch",
+    "build:manual-install": "bash scripts/build-manual-install-package.sh",
+    "lint": "npx biome check src/apps_script/",
+    "lint:fix": "npx biome check --write src/apps_script/",
+    "format": "npx biome format --write src/apps_script/",
+    "format:check": "npx biome format src/apps_script/",
+    "test:unit": "node --test tests/*.test.js",
+    "test": "npm run lint && npm run test:unit",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [],
+  "author": "Diego Mariño",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petalo/twenty-gmail-extension.git"
+  },
+  "lint-staged": {
+    "src/apps_script/*.js": [
+      "biome check --write --no-errors-on-unmatched",
+      "biome format --write --no-errors-on-unmatched"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
+    "@google/clasp": "^3.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "markdownlint": "^0.40.0"
+  }
+}

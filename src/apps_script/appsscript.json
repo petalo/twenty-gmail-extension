@@ -1,0 +1,37 @@
+{
+  "timeZone": "America/New_York",
+  "runtimeVersion": "V8",
+  "exceptionLogging": "STACKDRIVER",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.metadata",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/userinfo.email"
+  ],
+  "urlFetchWhitelist": ["https://api.twenty.com/"],
+  "addOns": {
+    "common": {
+      "name": "Twenty for Gmail",
+      "logoUrl": "https://raw.githubusercontent.com/petalo/twenty-gmail-extension/main/assets/logo/twenty-extension-addon-logo-128.png",
+      "homepageTrigger": {
+        "runFunction": "buildAddonHome",
+        "enabled": true
+      },
+      "layoutProperties": {
+        "primaryColor": "#171E2D"
+      }
+    },
+    "gmail": {
+      "homepageTrigger": {
+        "runFunction": "buildAddonHome",
+        "enabled": true
+      },
+      "contextualTriggers": [
+        {
+          "unconditional": {},
+          "onTriggerFunction": "buildMessageHome"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# Upload only source files required by Apps Script runtime.
+**
+!*.js
+!appsscript.json

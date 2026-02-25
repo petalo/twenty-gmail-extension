@@ -1,0 +1,61 @@
+node_modules/
+.playwright-cli/
+build/
+
+# Dependency lockfiles (not npm — package-lock.json IS tracked)
+yarn.lock
+pnpm-lock.yaml
+npm-debug.log*
+yarn-error.log*
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Logs
+logs/
+*.log
+
+# Apps Script local config and clasp artifacts
+src/apps_script/.clasp.json
+.clasp.json
+.clasp-settings.json
+.clasp-dev.json
+.clasp-local.json
+**/.clasprc.json
+
+# Local environment files
+.env
+.env.*
+!.env.*example
+
+# Internal docs (research, dev runbooks, runtime captures)
+docs/research/
+docs/internal/
+docs/runbooks/assets/
+
+# IDE and editor config
+.idea/
+.vscode/
+.claude/
+
+# Design iteration archives
+assets/logo/.archive/
+
+# Build artifacts
+*.tgz
+
+# OS artifacts
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.Spotlight-V100
+.Trashes
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent

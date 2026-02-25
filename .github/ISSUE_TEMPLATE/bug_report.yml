@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a reproducible bug in the Gmail add-on.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What failed and what you expected to happen.
+      placeholder: The add-on card failed to load after clicking Refresh.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include exact steps and environment details.
+      placeholder: |
+        1. Open Gmail thread ...
+        2. Open add-on ...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and evidence
+      description: Include non-sensitive snippets only.
+      placeholder: Add stack trace, HTTP status code, and timestamp.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I removed API tokens, secrets, and personal data from this report.
+          required: true

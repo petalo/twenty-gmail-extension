@@ -1,0 +1,172 @@
+name: Apps Script Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target environment label (for audit only)"
+        required: false
+        default: "production"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test suite
+        run: npm run test
+
+      - name: Validate required secrets
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          APPS_SCRIPT_SCRIPT_ID: ${{ secrets.APPS_SCRIPT_SCRIPT_ID }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "Missing secret: CLASPRC_JSON"
+            exit 1
+          fi
+          if [ -z "$APPS_SCRIPT_SCRIPT_ID" ]; then
+            echo "Missing secret: APPS_SCRIPT_SCRIPT_ID"
+            exit 1
+          fi
+
+      - name: Configure clasp auth and script binding
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          APPS_SCRIPT_SCRIPT_ID: ${{ secrets.APPS_SCRIPT_SCRIPT_ID }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          cat > src/apps_script/.clasp.json <<EOF
+          {
+            "scriptId": "$APPS_SCRIPT_SCRIPT_ID",
+            "rootDir": ".",
+            "scriptExtensions": [".js", ".gs"],
+            "htmlExtensions": [".html"],
+            "jsonExtensions": [".json"]
+          }
+          EOF
+
+      - name: Syntax check
+        run: |
+          for f in src/apps_script/*.js; do
+            node --check "$f"
+          done
+
+      - name: Push source to Apps Script
+        run: npm run gas:push
+
+      - name: Create version
+        id: version
+        run: |
+          VERSION_OUTPUT=$(cd src/apps_script && npx clasp version "ci:${GITHUB_SHA}")
+          echo "$VERSION_OUTPUT"
+          VERSION_NUMBER=$(echo "$VERSION_OUTPUT" | grep -Eo '[0-9]+' | tail -1)
+          if [ -z "$VERSION_NUMBER" ]; then
+            echo "Could not parse version number from clasp output."
+            exit 1
+          fi
+          echo "version_number=$VERSION_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Build manual-install package
+        id: manual_package
+        run: |
+          VERSION_NUMBER="${{ steps.version.outputs.version_number }}"
+          npm run build:manual-install -- "$VERSION_NUMBER"
+          echo "zip_path_versioned=build/twenty-for-gmail-manual-install-v${VERSION_NUMBER}.zip" >> "$GITHUB_OUTPUT"
+          echo "zip_path_latest=build/twenty-for-gmail-manual-install-latest.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Upload manual-install artifact (versioned)
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-install-v${{ steps.version.outputs.version_number }}
+          path: ${{ steps.manual_package.outputs.zip_path_versioned }}
+          if-no-files-found: error
+
+      - name: Upload manual-install artifact (latest alias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-install-latest
+          path: ${{ steps.manual_package.outputs.zip_path_latest }}
+          if-no-files-found: error
+
+      - name: Deploy version
+        id: deploy
+        env:
+          APPS_SCRIPT_DEPLOYMENT_ID: ${{ secrets.APPS_SCRIPT_DEPLOYMENT_ID }}
+        run: |
+          VERSION_NUMBER="${{ steps.version.outputs.version_number }}"
+          if [ -n "$APPS_SCRIPT_DEPLOYMENT_ID" ]; then
+            DEPLOY_OUTPUT=$(cd src/apps_script && npx clasp deploy \
+              --deploymentId "$APPS_SCRIPT_DEPLOYMENT_ID" \
+              --versionNumber "$VERSION_NUMBER" \
+              --description "ci:${GITHUB_SHA}")
+          else
+            DEPLOY_OUTPUT=$(cd src/apps_script && npx clasp deploy \
+              --versionNumber "$VERSION_NUMBER" \
+              --description "ci:${GITHUB_SHA}")
+          fi
+          echo "$DEPLOY_OUTPUT"
+          echo "deploy_output<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$DEPLOY_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare GitHub release metadata
+        id: release_meta
+        run: |
+          VERSION_NUMBER="${{ steps.version.outputs.version_number }}"
+          echo "tag_name=gas-v${VERSION_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "release_name=Apps Script v${VERSION_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag_name }}
+          name: ${{ steps.release_meta.outputs.release_name }}
+          generate_release_notes: false
+          body: |
+            Automated release for Apps Script deployment.
+
+            - Commit: `${{ github.sha }}`
+            - Apps Script version: `${{ steps.version.outputs.version_number }}`
+            - Target: `${{ github.event.inputs.target || 'production' }}`
+          files: |
+            build/manual-install/Code.gs
+            build/manual-install/appsscript.json
+            build/twenty-for-gmail-manual-install-latest.zip
+
+      - name: Publish summary
+        run: |
+          {
+            echo "## Apps Script release summary"
+            echo ""
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Version: \`${{ steps.version.outputs.version_number }}\`"
+            echo "- Target: \`${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Manual install artifact: \`manual-install-v${{ steps.version.outputs.version_number }}\`"
+            echo "- Manual install latest alias: \`manual-install-latest\`"
+            echo "- GitHub release tag: \`${{ steps.release_meta.outputs.tag_name }}\`"
+            echo ""
+            echo "### Latest release download links"
+            echo "- [Code.gs](https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/Code.gs)"
+            echo "- [appsscript.json](https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/appsscript.json)"
+            echo "- [Manual ZIP](https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/twenty-for-gmail-manual-install-latest.zip)"
+            echo ""
+            echo "### Deploy output"
+            echo '```txt'
+            echo "${{ steps.deploy.outputs.deploy_output }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
