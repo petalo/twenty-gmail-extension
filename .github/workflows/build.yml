@@ -10,12 +10,14 @@ on:
   push:
     branches:
       - main
+  release:
+    types: [published]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout
@@ -33,14 +35,24 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Resolve version label
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            # Strip leading "v" from the release tag (e.g. v1.2.0 → 1.2.0)
+            echo "label=${{ github.event.release.tag_name }}" | sed 's/label=v/label=/' >> "$GITHUB_OUTPUT"
+          else
+            echo "label=${{ github.event.inputs.version || 'dev' }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build manual-install package
-        run: npm run build:manual-install -- "${{ github.event.inputs.version || 'dev' }}"
+        run: npm run build:manual-install -- "${{ steps.version.outputs.label }}"
 
       - name: Upload artifact (versioned)
         uses: actions/upload-artifact@v4
         with:
-          name: manual-install-v${{ github.event.inputs.version || 'dev' }}
-          path: build/twenty-for-gmail-manual-install-v${{ github.event.inputs.version || 'dev' }}.zip
+          name: manual-install-v${{ steps.version.outputs.label }}
+          path: build/twenty-for-gmail-manual-install-v${{ steps.version.outputs.label }}.zip
           if-no-files-found: error
 
       - name: Upload artifact (latest alias)
@@ -49,3 +61,13 @@ jobs:
           name: manual-install-latest
           path: build/twenty-for-gmail-manual-install-latest.zip
           if-no-files-found: error
+
+      - name: Attach ZIP to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/twenty-for-gmail-manual-install-v${{ steps.version.outputs.label }}.zip
+            build/twenty-for-gmail-manual-install-latest.zip
+            build/manual-install/Code.gs
+            build/manual-install/appsscript.json
