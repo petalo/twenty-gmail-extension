@@ -49,6 +49,7 @@ ZIP_FILE_VERSIONED="$ROOT_DIR/build/twenty-for-gmail-manual-install-v${VERSION_L
 ZIP_FILE_LATEST="$ROOT_DIR/build/twenty-for-gmail-manual-install-latest.zip"
 CODE_FILE="$BUILD_DIR/Code.gs"
 MANIFEST_FILE="$BUILD_DIR/appsscript.json"
+INSTALL_FILE="$BUILD_DIR/INSTALL_FROM_ZIP.md"
 
 # ---------------------------------------------------------------------------
 # Source files — concatenation order reflects dependency graph:
@@ -111,11 +112,12 @@ done
 # 3. Copy manifest and package both files into the ZIP
 # ---------------------------------------------------------------------------
 cp "$SOURCE_DIR/appsscript.json" "$MANIFEST_FILE"
+cp "$ROOT_DIR/INSTALL_FROM_ZIP.md" "$INSTALL_FILE"
 rm -f "$ZIP_FILE_VERSIONED" "$ZIP_FILE_LATEST"
 
 (
   cd "$BUILD_DIR"
-  zip -q "$ZIP_FILE_VERSIONED" "Code.gs" "appsscript.json"
+  zip -q "$ZIP_FILE_VERSIONED" "Code.gs" "appsscript.json" "INSTALL_FROM_ZIP.md"
 )
 
 # latest is always a copy of the most recent versioned build
@@ -127,5 +129,6 @@ cp "$ZIP_FILE_VERSIONED" "$ZIP_FILE_LATEST"
 echo "Generated:"
 echo "- $CODE_FILE"
 echo "- $MANIFEST_FILE"
+echo "- $INSTALL_FILE"
 echo "- $ZIP_FILE_VERSIONED"
 echo "- $ZIP_FILE_LATEST"
