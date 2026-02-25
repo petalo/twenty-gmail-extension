@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0](https://github.com/petalo/twenty-gmail-extension/compare/twenty-extension-v1.0.0...twenty-extension-v1.1.0) (2026-02-25)
+
+
+### Added
+
+* include INSTALL_FROM_ZIP.md in manual-install package ([d1354ce](https://github.com/petalo/twenty-gmail-extension/commit/d1354ce81e21260329773822add922db6597a336))
+
 ## [1.0.0] - 2026-02-25
 
 ### Added
