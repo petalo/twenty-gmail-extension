@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0](https://github.com/petalo/twenty-gmail-extension/compare/twenty-extension-v1.1.0...twenty-extension-v1.2.0) (2026-03-10)
+
+
+### Added
+
+* add workspace URL management functions and validation ([229c1e1](https://github.com/petalo/twenty-gmail-extension/commit/229c1e1669a1a208d63bd41d3ea3448974622f90))
+
 ## [1.1.0](https://github.com/petalo/twenty-gmail-extension/compare/twenty-extension-v1.0.0...twenty-extension-v1.1.0) (2026-02-25)
 
 
