@@ -107,6 +107,39 @@ function onResetApiToken(e) {
 }
 
 /**
+ * @description Handles the "Save workspace URL" button click.
+ * @param {Object} e - The Gmail add-on event object containing form input.
+ * @returns {Object} A CardService ActionResponse that updates the current card.
+ */
+function onSaveAppUrl(e) {
+  const rawInput = getFormValue(e, FORM_FIELDS.APP_URL);
+  const appUrl = normalizeAppUrlInput(rawInput);
+
+  if (!appUrl) {
+    return buildUpdateCardActionResponse(
+      buildAddonMainCardForEvent(e, { tokenError: "Workspace URL is required." })
+    );
+  }
+
+  saveUserAppUrl(appUrl);
+  return buildUpdateCardActionResponse(
+    buildAddonMainCardForEvent(e, { tokenNotice: "Workspace URL saved: " + appUrl })
+  );
+}
+
+/**
+ * @description Handles the "Reset workspace URL" button click.
+ * @param {Object} e - The Gmail add-on event object.
+ * @returns {Object} A CardService ActionResponse that updates the current card.
+ */
+function onResetAppUrl(e) {
+  clearUserAppUrl();
+  return buildUpdateCardActionResponse(
+    buildAddonMainCardForEvent(e, { tokenNotice: "Workspace URL removed." })
+  );
+}
+
+/**
  * @description Opens the quick-create entity form as a pushed card.
  * @param {Object} e - The Gmail add-on event object.
  * @returns {Object} A CardService ActionResponse that pushes the quick-create card.

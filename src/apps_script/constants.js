@@ -6,9 +6,12 @@
  */
 
 const TWENTY_BASE_URL = "https://api.twenty.com";
+// Fallback app URL used when no workspace URL has been configured by the user.
+const TWENTY_APP_URL = "https://app.twenty.com";
 const EXTENSION_REPOSITORY_URL = "https://github.com/petalo/twenty-gmail-extension";
 
 const USER_TOKEN_PROPERTY_NAMESPACE = "twenty_api_token";
+const USER_APP_URL_PROPERTY_NAMESPACE = "twenty_app_url";
 const USER_RECENT_COMPANIES_PROPERTY_NAMESPACE = "twenty_recent_companies";
 const RECENT_COMPANIES_LIMIT = 8;
 
@@ -41,6 +44,7 @@ const UI_COLORS = {
 
 const ACTION_NAMES = {
   SAVE_API_TOKEN: "onSaveApiToken",
+  SAVE_APP_URL: "onSaveAppUrl",
   OPEN_MESSAGE_CONTEXT: "onOpenMessageContext",
   REFRESH_CONTEXT: "onRefreshContext",
   OPEN_QUICK_CREATE_FORM: "onOpenQuickCreateForm",
@@ -49,11 +53,13 @@ const ACTION_NAMES = {
   CREATE_QUICK_ENTITY: "onCreateQuickEntity",
   CREATE_NOTE: "onCreateNote",
   CREATE_ACTIVITY: "onCreateActivity",
-  RESET_TOKEN: "onResetApiToken"
+  RESET_TOKEN: "onResetApiToken",
+  RESET_APP_URL: "onResetAppUrl"
 };
 
 const FORM_FIELDS = {
   API_TOKEN: "apiToken",
+  APP_URL: "appUrl",
   TARGET_ENTITY: "targetEntity",
   NOTE_BODY: "noteBody",
   ACTIVITY_TITLE: "activityTitle",

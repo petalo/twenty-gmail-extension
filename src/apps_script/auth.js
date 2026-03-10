@@ -22,6 +22,40 @@ function getUserTokenPropertyKey() {
 }
 
 /**
+ * @description Builds the UserProperties key for storing the workspace app URL.
+ * @returns {string} A namespaced property key for the current user's workspace URL.
+ */
+function getUserAppUrlPropertyKey() {
+  return USER_APP_URL_PROPERTY_NAMESPACE + ":" + getCurrentUserKey();
+}
+
+/**
+ * @description Retrieves the stored Twenty workspace URL for the current user.
+ * @returns {string} The workspace URL, or the TWENTY_APP_URL fallback if not set.
+ */
+function getUserAppUrl() {
+  const stored = normalizeString(
+    PropertiesService.getUserProperties().getProperty(getUserAppUrlPropertyKey())
+  );
+  return stored || TWENTY_APP_URL;
+}
+
+/**
+ * @description Persists a Twenty workspace URL in UserProperties for the current user.
+ * @param {string} url - The workspace URL to save.
+ */
+function saveUserAppUrl(url) {
+  PropertiesService.getUserProperties().setProperty(getUserAppUrlPropertyKey(), url);
+}
+
+/**
+ * @description Removes the stored workspace URL for the current user.
+ */
+function clearUserAppUrl() {
+  PropertiesService.getUserProperties().deleteProperty(getUserAppUrlPropertyKey());
+}
+
+/**
  * @description Builds the UserProperties key for storing recent companies.
  * @returns {string} A namespaced property key for the current user's recent companies.
  */

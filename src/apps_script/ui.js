@@ -107,6 +107,8 @@ function buildAddonMainCard(context, options) {
     );
   }
 
+  addAppUrlWidgets(accountSection, context);
+
   return CardService.newCardBuilder()
     .setHeader(CardService.newCardHeader().setTitle("Twenty for Gmail"))
     .addSection(introSection)
@@ -185,12 +187,16 @@ function buildSidebarMainCard(state, options) {
   const contextSection = CardService.newCardSection();
   const adminSection = CardService.newCardSection();
 
-  contextSection.addWidget(
-    CardService.newDecoratedText()
-      .setTopLabel("Email sender")
-      .setText(context.fromEmail || "Unknown")
-      .setBottomLabel(context.subject || "")
-  );
+  contextSection.addWidget(buildContextSummaryWidget(state));
+
+  if (!state.person) {
+    contextSection.addWidget(
+      CardService.newDecoratedText()
+        .setTopLabel("Email sender")
+        .setText(context.fromEmail || "Unknown")
+        .setBottomLabel(context.subject || "")
+    );
+  }
 
   contextSection.addWidget(
     CardService.newTextButton()
@@ -245,6 +251,7 @@ function buildSidebarMainCard(state, options) {
             .setParameters(serializeContextParams(context))
         )
     );
+    addAppUrlWidgets(adminSection, context);
     if (state.status === SIDEBAR_STATUS.AMBIGUOUS_MATCH) {
       contextSection.addWidget(
         CardService.newTextParagraph().setText(
@@ -316,6 +323,7 @@ function buildSidebarMainCard(state, options) {
           .setParameters(serializeContextParams(context))
       )
   );
+  addAppUrlWidgets(adminSection, context);
 
   if (state.status === SIDEBAR_STATUS.AMBIGUOUS_MATCH) {
     contextSection.addWidget(
@@ -906,6 +914,59 @@ function buildPushCardActionResponse(card) {
 }
 
 /**
+ * @description Adds workspace URL configuration widgets to a card section.
+ *
+ * Shows the current workspace URL with a reset button if one is stored,
+ * or a text input and save button if not yet configured.
+ *
+ * @param {Object} section - A CardService CardSection to append widgets to.
+ * @param {Object} context - The message context for action parameters.
+ */
+function addAppUrlWidgets(section, context) {
+  const storedUrl = normalizeString(
+    PropertiesService.getUserProperties().getProperty(
+      USER_APP_URL_PROPERTY_NAMESPACE + ":" + getCurrentUserEmailSafe().toLowerCase()
+    )
+  );
+
+  section.addWidget(CardService.newTextParagraph().setText("<b>Workspace URL</b>"));
+
+  if (storedUrl) {
+    section.addWidget(
+      CardService.newTextParagraph().setText(
+        '<font color="' + UI_COLORS.MUTED + '">' + storedUrl + "</font>"
+      )
+    );
+    section.addWidget(
+      CardService.newTextButton()
+        .setText("Reset workspace URL")
+        .setOnClickAction(
+          CardService.newAction()
+            .setFunctionName(ACTION_NAMES.RESET_APP_URL)
+            .setParameters(serializeContextParams(context))
+        )
+    );
+  } else {
+    section
+      .addWidget(
+        CardService.newTextInput()
+          .setFieldName(FORM_FIELDS.APP_URL)
+          .setTitle("Twenty workspace URL")
+          .setHint("e.g. my-workspace or my-workspace.twenty.com")
+      )
+      .addWidget(
+        CardService.newTextButton()
+          .setText("Save workspace URL")
+          .setOnClickAction(
+            CardService.newAction()
+              .setFunctionName(ACTION_NAMES.SAVE_APP_URL)
+              .setParameters(serializeContextParams(context))
+          )
+      );
+  }
+}
+
+/**
  * @description Builds an ActionResponse that shows a temporary notification toast.
  * @param {string} text - The notification message text.
  * @returns {Object} A CardService ActionResponse with a notification.
@@ -914,4 +975,101 @@ function buildNotificationActionResponse(text) {
   return CardService.newActionResponseBuilder()
     .setNotification(CardService.newNotification().setText(text))
     .build();
+}
+
+/**
+ * @description Checks whether an opportunity is considered active (not closed).
+ *
+ * Treats an opportunity as inactive when its stage field contains "CLOSED"
+ * (case-insensitive), covering Twenty's default CLOSED_WON and CLOSED_LOST stages.
+ * Opportunities with no stage set are treated as active.
+ *
+ * @param {Object} opportunity - A Twenty CRM opportunity record.
+ * @returns {boolean} True if the opportunity is active, false if closed.
+ */
+function isOpportunityActive(opportunity) {
+  const stage = normalizeString(opportunity && opportunity.stage).toUpperCase();
+  if (!stage) {
+    return true;
+  }
+  return stage.indexOf("CLOSED") === -1;
+}
+
+/**
+ * @description Builds an HTML anchor link to a Twenty CRM entity record.
+ * @param {string} label - The link display text.
+ * @param {string} entityType - One of ENTITY_TYPES values.
+ * @param {string} id - The entity record ID.
+ * @returns {string} An HTML anchor tag string.
+ */
+function buildEntityLink(label, entityType, id) {
+  const paths = {
+    person: "/object/person/",
+    company: "/object/company/",
+    opportunity: "/object/opportunity/"
+  };
+  const path = paths[entityType] || "/objects/";
+  return '<a href="' + getUserAppUrl() + path + id + '">' + label + "</a>";
+}
+
+/**
+ * @description Builds a compact CRM status summary TextParagraph for the sidebar header.
+ *
+ * Renders 3–4 lines showing whether a contact, company, and opportunities were
+ * found for the email sender. Uses ☑ for present records and ∅ for absent ones.
+ * Names are linked to their respective Twenty CRM entity pages.
+ * Closed opportunities are shown on a separate ◻ line if any exist.
+ *
+ * @param {Object} state - The sidebar state from loadSidebarState.
+ * @returns {Object} A CardService TextParagraph widget with the summary text.
+ */
+function buildContextSummaryWidget(state) {
+  const lines = [];
+
+  if (state.person) {
+    const name = getEntityDisplayName(state.person, ENTITY_TYPES.PERSON);
+    lines.push("☑ " + buildEntityLink(name, ENTITY_TYPES.PERSON, state.person.id));
+  } else {
+    lines.push('<font color="' + UI_COLORS.MUTED + '">∅ (No contact)</font>');
+  }
+
+  if (state.company) {
+    const name = getEntityDisplayName(state.company, ENTITY_TYPES.COMPANY);
+    lines.push("☑ " + buildEntityLink(name, ENTITY_TYPES.COMPANY, state.company.id));
+  } else {
+    lines.push('<font color="' + UI_COLORS.MUTED + '">∅ (No company)</font>');
+  }
+
+  const activeOpps = (state.opportunities || []).filter(isOpportunityActive);
+  const closedOpps = (state.opportunities || []).filter((opp) => !isOpportunityActive(opp));
+
+  if (activeOpps.length > 0) {
+    const oppLinks = activeOpps
+      .map((opp) =>
+        buildEntityLink(
+          getEntityDisplayName(opp, ENTITY_TYPES.OPPORTUNITY),
+          ENTITY_TYPES.OPPORTUNITY,
+          opp.id
+        )
+      )
+      .join(", ");
+    lines.push("☑ " + oppLinks);
+  } else {
+    lines.push('<font color="' + UI_COLORS.MUTED + '">∅ (No opportunities)</font>');
+  }
+
+  if (closedOpps.length > 0) {
+    const closedLinks = closedOpps
+      .map((opp) =>
+        buildEntityLink(
+          getEntityDisplayName(opp, ENTITY_TYPES.OPPORTUNITY),
+          ENTITY_TYPES.OPPORTUNITY,
+          opp.id
+        )
+      )
+      .join(", ");
+    lines.push('<font color="' + UI_COLORS.MUTED + '">◻ ' + closedLinks + "</font>");
+  }
+
+  return CardService.newTextParagraph().setText(lines.join("<br>"));
 }

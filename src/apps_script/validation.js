@@ -98,7 +98,10 @@ function validateQuickEntityInput(entityType, payload) {
 
   if (entityType === ENTITY_TYPES.PERSON) {
     if (!isValidEmail(payload.email)) {
-      return { ok: false, message: "A valid email is required for person creation." };
+      return {
+        ok: false,
+        message: "A valid email is required for person creation."
+      };
     }
     if (!isNonEmptyString(payload.name)) {
       return { ok: false, message: "Name is required for person creation." };
@@ -196,6 +199,34 @@ function isValidTargetEntityRef(value) {
   const entityType = parts[0];
   const entityId = parts[1];
   return Object.values(ENTITY_TYPES).includes(entityType) && isNonEmptyString(entityId);
+}
+
+/**
+ * @description Normalizes a Twenty workspace URL input into a canonical https:// URL.
+ *
+ * Accepts three input forms:
+ *   - Subdomain only:  "petalo-0sveFG1l"            → "https://petalo-0sveFG1l.twenty.com"
+ *   - Hostname:        "petalo-0sveFG1l.twenty.com"  → "https://petalo-0sveFG1l.twenty.com"
+ *   - Full URL:        "https://petalo-0sveFG1l.twenty.com/" → "https://petalo-0sveFG1l.twenty.com"
+ *
+ * @param {string} value - Raw user input for the workspace URL.
+ * @returns {string} The normalized URL, or empty string if the input is blank.
+ */
+function normalizeAppUrlInput(value) {
+  var trimmed = normalizeString(value).replace(/\/+$/, "");
+  if (!trimmed) {
+    return "";
+  }
+
+  if (trimmed.indexOf("://") !== -1) {
+    return trimmed;
+  }
+
+  if (trimmed.indexOf(".") === -1) {
+    return "https://" + trimmed + ".twenty.com";
+  }
+
+  return "https://" + trimmed;
 }
 
 /**
